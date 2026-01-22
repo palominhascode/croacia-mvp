@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.1.0"
+version       = "v0.1.0-alpha.1"
 author        = "Croacia"
 description   = "Competitive Intelligence API - Brasil"
 license       = "MIT"
