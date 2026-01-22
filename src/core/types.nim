@@ -2,8 +2,6 @@
 # TYPES - Definições Compartilhadas
 # ============================================================================
 
-import asyncdispatch, httpclient
-
 type
   # Response types
   SearchResult* = object

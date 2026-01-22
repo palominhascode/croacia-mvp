@@ -14,7 +14,7 @@ import strutils
 import times
 import asyncdispatch
 import os
-import cloudscraper_bridge
+import ../bridge/cloudscraper_bridge
 
 # ============================================================================
 # Type Definitions
@@ -133,7 +133,7 @@ proc extractTextContent*(html: string): string =
 # Esta função implementa o chain: HTTP simples → Cloudscraper fallback
 # Usada em scrapePage para suportar Cloudflare
 
-proc fetchUrlWithFallback*(url: string): Future[string] {.async, gcsafe.} =
+proc fetchUrlWithFallback*(url: string): Future[string] {.async.} =
   let homepageUrl = normalizeToHomepage(url)
 
   # PASSO 1: Tentar HTTP simples (rápido)

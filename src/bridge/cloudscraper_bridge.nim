@@ -2,7 +2,7 @@
 # Cloudscraper Bridge - CLOUDFLARE BYPASS (Fase 1A) - CORRIGIDO
 # ============================================================================
 # ✅ Erros resolvidos
-# ✅ Pronto para usar
+# ✅ Pronto para usar 
 # ============================================================================
 
 import json

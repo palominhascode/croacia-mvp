@@ -1,22 +1,81 @@
-# flyctl launch added from .gitignore
-**/*.o
-**/*.out
-**/*.dblite
+# =============================================================================
+# .dockerignore - Otimizado para Fly.io
+# =============================================================================
+# Remove arquivos desnecessários do build context
+# Reduz tamanho do build e tempo de deploy
+# =============================================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Build artifacts Nim
 **/.nimcache
 **/nimcache
-**/htmldocs
-**/*.exe
-**/*.dll
-**/*.so
-**/*.dylib
+*.o
+*.out
+*.dblite
+htmldocs/
+
+# Executáveis
 **/croacia
 **/bin
-**/.env.local
-**/.DS_Store
-**/node_modules
-**/dist
-**/.vscode
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Desenvolvimento
+.vscode
+.DS_Store
 **/*.swp
 **/*.swo
 **/*~
+
+# Node (se houver frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.egg-info/
+.Python
+build/
+dist/
+
+# Docker
+.dockerignore
+Dockerfile*
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.circleci
+
+# Testes
+test/
+tests/
+**/*_test.nim
+
+# Logs
+*.log
+logs/
+
+# Ambiente local
+.env.local
+.env.development
+
+# Documentação (opcional - remover se quiser incluir)
+# docs/
+
+# Fly.io
 fly.toml
+
+# Misc
+tmp/
+temp/
+cache/

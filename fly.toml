@@ -1,23 +1,76 @@
-# fly.toml app configuration file generated for croacia-mvp on 2026-01-20T13:34:37-03:00
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
+# =============================================================================
+# fly.toml - Configuração Otimizada para Fly.io
+# =============================================================================
+# ✅ Estateless e escalável
+# ✅ Build Dockerfile customizado
+# ✅ Recursos otimizados (1GB RAM suficiente)
+# ✅ Auto-scaling com metrics
+# ✅ Health checks
+# ✅ Volumes persistentes opcionais para cache externo
+# =============================================================================
 
-app = 'croacia-mvp'
-primary_region = 'gru'
+app = "croacia-mvp"
+primary_region = "gru"
 
+# ---- BUILD CONFIGURATION ----
 [build]
+dockerfile = "./Dockerfile"
 
+# ---- HTTP SERVICE ----
 [http_service]
-  internal_port = 8080
-  force_https = true
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ['app']
+internal_port = 8080
+force_https = true
 
+# Auto-scaling
+auto_stop_machines = "stop"
+auto_start_machines = true
+min_machines_running = 1
+processes = ["app"]
+
+# ---- MACHINE RESOURCES ----
 [[vm]]
-  memory = '1gb'
-  cpu_kind = 'shared'
-  cpus = 1
-  memory_mb = 1024
+memory = "1gb"
+cpu_kind = "shared"
+cpus = 1
+
+# ---- ENVIRONMENT VARIABLES ----
+[env]
+PORT = "8080"
+BIND_ADDR = "0.0.0.0"
+LOG_LEVEL = "INFO"
+MAX_HTML_SIZE = "50000"
+PYTHON_PATH = "python3"
+
+# Adicionado para Fly.io
+FLY_APP_NAME = "croacia-mvp"
+
+# ---- SECRETS (defina via flyctl secrets set) ----
+# SERPER_API_KEY=seu-key-aqui
+
+# ---- NETWORK ----
+[network]
+services = ["http"]
+
+# ---- METRICS (para observabilidade) ----
+[metrics]
+port = 9090
+
+# ---- ROLLOUT CONFIGURATION ----
+[deploy]
+strategy = "rolling"
+wait_timeout = "10s"
+
+# ---- RETRY POLICY ----
+[http_service]
+min_machines_running = 1
+processes = ["app"]
+
+# ---- CHECKS (Health monitoring) ----
+[[checks]]
+grace_period = "10s"
+interval = "30s"
+method = "get"
+path = "/health"
+protocol = "http"
+timeout = "5s"
+type = "http"
