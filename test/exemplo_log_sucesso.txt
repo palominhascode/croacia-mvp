@@ -1,0 +1,60 @@
+palominhascode@pop-os:~/Documents/code/nim/projects/croacia-mvp$ ./build/croacia_mvp
+INFO Jester is making jokes at http://0.0.0.0:8080
+Starting 8 threads
+Listening on port 8080
+[API] Query: petco | Max: 5
+[ANALYZE] Iniciando: petco
+[SERPER] Buscando: petco
+[SERPER] URLs encontradas: 5
+[ANALYZE] Scrapando 5 URLs...
+[ANALYZE] URL 1/5
+[SCRAPER] Buscando: https://www.petco.com/shop/en/petcostore
+[FETCH] HTTP simples: https://www.petco.com/shop/en/petcostore
+[FETCH] HTTP falhou, tentando Cloudscraper...
+[CLOUDSCRAPER] Tentativa 1/2 para: https://www.petco.com/shop/en/petcostore
+[CLOUDSCRAPER] ✅ SUCESSO (tentativa 1)
+[FETCH] ✅ Cloudscraper OK
+[SCRAPER] ✅ OK: https://www.petco.com/shop/en/petcostore (50000 bytes)
+[ANALYZE] Adicionando resultado...
+[ANALYZE] Total: 1
+[ANALYZE] URL 2/5
+[SCRAPER] Buscando: https://stores.petco.com
+[FETCH] HTTP simples: https://stores.petco.com
+[FETCH] ✅ HTTP OK
+[SCRAPER] ✅ OK: https://stores.petco.com (50000 bytes)
+[ANALYZE] Adicionando resultado...
+[ANALYZE] Total: 2
+[ANALYZE] URL 3/5
+[SCRAPER] Buscando: https://petcolove.org
+[FETCH] HTTP simples: https://petcolove.org
+[FETCH] ✅ HTTP OK
+[SCRAPER] ✅ OK: https://petcolove.org (50000 bytes)
+[ANALYZE] Adicionando resultado...
+[ANALYZE] Total: 3
+[ANALYZE] URL 4/5
+[SCRAPER] Buscando: https://careers.petco.com
+[FETCH] HTTP simples: https://careers.petco.com
+[FETCH] ✅ HTTP OK
+[SCRAPER] ✅ OK: https://careers.petco.com (50000 bytes)
+[ANALYZE] Adicionando resultado...
+[ANALYZE] Total: 4
+[ANALYZE] URL 5/5
+[SCRAPER] Buscando: https://stores.petco.com/nj/eggharbortownship/pet-supplies-eggharbortownship-nj-3841.html
+[FETCH] HTTP simples: https://stores.petco.com/nj/eggharbortownship/pet-supplies-eggharbortownship-nj-3841.html
+[FETCH] ✅ HTTP OK
+[SCRAPER] ✅ OK: https://stores.petco.com/nj/eggharbortownship/pet-supplies-eggharbortownship-nj-3841.html (50000 bytes)
+[ANALYZE] Adicionando resultado...
+[ANALYZE] Total: 5
+[ANALYZE] Concluído: 5 resultados (com Cloudscraper fallback)
+[JSON] Convertendo 5 resultados...
+[JSON] Resultado 1/5
+[JSON] OK
+[JSON] Resultado 2/5
+[JSON] OK
+[JSON] Resultado 3/5
+[JSON] OK
+[JSON] Resultado 4/5
+[JSON] OK
+[JSON] Resultado 5/5
+[JSON] OK
+[JSON] Array pronto: 5 items
