@@ -1,0 +1,12 @@
+0000000000000000000000000000000000000000 7803162126584ecdcf8dd6e5442fff97408bed6e palominhascode <homerobaroni@gmail.com> 1768877844 -0300	commit (initial): Primeiro commit com a solução (-) server
+7803162126584ecdcf8dd6e5442fff97408bed6e f89275c4427110a0e5181ebadc900c2f8eabb2d1 palominhascode <homerobaroni@gmail.com> 1768917206 -0300	commit: Correções gerais, ainda com 1 aviso no checker (jester)
+f89275c4427110a0e5181ebadc900c2f8eabb2d1 f39ca9a869b434506fc3f7ef88cc349a9892ad0c palominhascode <homerobaroni@gmail.com> 1768917959 -0300	commit: Substituído jester por jesterfork - 100% funcional
+f39ca9a869b434506fc3f7ef88cc349a9892ad0c 1e4cced74ab3bcb60a524ae6203ae7f88e2854b4 palominhascode <homerobaroni@gmail.com> 1768924742 -0300	commit: Croacia MVP API - jesterfork production ready on port 8080
+1e4cced74ab3bcb60a524ae6203ae7f88e2854b4 6000b8a91906d2243cac6d8cf1a95d697308a048 palominhascode <homerobaroni@gmail.com> 1768927202 -0300	commit: Ready to deploy Fly.io
+6000b8a91906d2243cac6d8cf1a95d697308a048 9d9ad434a86ba4b5263226dd71d64198c397ffaa palominhascode <homerobaroni@gmail.com> 1768961688 -0300	commit: Version 2 - channel based cache
+9d9ad434a86ba4b5263226dd71d64198c397ffaa 5d384ab3099f711c07b0ec87c56ddb17e6a1738a palominhascode <homerobaroni@gmail.com> 1768963303 -0300	commit: Correção 1 Scraper module
+5d384ab3099f711c07b0ec87c56ddb17e6a1738a 7920acc68dd0d01c8bad9766ae3114d8cc0b5235 palominhascode <homerobaroni@gmail.com> 1768964695 -0300	commit: Scraper - html chunks 50KB
+7920acc68dd0d01c8bad9766ae3114d8cc0b5235 4c5eaa9f500173360f7f9d18a2bd912b2e6fd574 palominhascode <homerobaroni@gmail.com> 1768964941 -0300	commit: Implementado server log + fallbacks + validacao
+4c5eaa9f500173360f7f9d18a2bd912b2e6fd574 56fd8a1d8d7bf15c9a2033abd3ac6bb881fbe044 palominhascode <homerobaroni@gmail.com> 1769015718 -0300	commit: sistema de cache removido
+56fd8a1d8d7bf15c9a2033abd3ac6bb881fbe044 8ade0f178c7692ba65ad005b71200c797b97e720 palominhascode <homerobaroni@gmail.com> 1769027621 -0300	commit: Cloudscraper implementado
+8ade0f178c7692ba65ad005b71200c797b97e720 00a4ee33ac710d4be8595b06b24f9c0316d5c3a8 palominhascode <homerobaroni@gmail.com> 1769042161 -0300	commit: chore: final changes before git reset
