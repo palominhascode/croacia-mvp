@@ -188,7 +188,7 @@ Cliente
 | Flag | Propósito | Por Quê |
 |------|-----------|---------|
 | `-d:release` | Otimizações | Performance em produção |
-| `--gc:arc` | Gerenciamento de memória | Eficiente durante build |
+| `--mm:arc` | Gerenciamento de memória | Eficiente durante build |
 | `-d:ssl` | Suporte HTTPS | Necessário para SERPER |
 | `-o:build/croacia_mvp` | Output | Local do binário |
 
