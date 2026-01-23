@@ -49,7 +49,7 @@ proc fetchUrlsFromSerper*(query: string): Future[seq[string]] {.async, gcsafe.} 
     echo "[SERPER] Buscando: ", query
     var client = newHttpClient()
     client.headers = newHttpHeaders({
-      "X-API-KEY": SERPER_API_KEY,
+      "X-API-Key": SERPER_API_KEY,
       "Content-Type": "application/json"
     })
     client.timeout = 5000

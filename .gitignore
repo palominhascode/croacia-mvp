@@ -21,3 +21,6 @@ dist/
 *.log
 *.sh
 *.env
+docker-compose.yaml
+build/croacia_mvp
+build/croacia_mvp
