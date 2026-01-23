@@ -19,9 +19,7 @@
 │      - Python subprocess                │
 │      - Cloudflare bypass                │
 ├─────────────────────────────────────────┤
-│       cache_manager.nim (Utils)         │
-│      - Response caching                 │
-│      - TTL management                   │
+|       JSON file (scraped html)          │
 └─────────────────────────────────────────┘
 ```
 
@@ -32,4 +30,4 @@
 3. Cache check → cache_manager.nim
 4. HTTP request → Success
 5. If blocked → cloudscraper_bridge.nim
-6. Cache result → Return response
+6. → Return response

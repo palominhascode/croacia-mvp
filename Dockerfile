@@ -1,94 +1,40 @@
-# ============================================================================
-# Dockerfile-final - Build Multi-Stage com SSL Support Completo
-# ============================================================================
-# ✅ Memory-efficient build
-# ✅ SSL support para SERPER API
-# ✅ Pronto para Fly.io deployment
-# ============================================================================
+# ESTÁGIO 1: Compilação (Build)
+FROM nimlang/nim:2.2.6-alpine-regular AS builder
 
-# ---- STAGE 1: Builder (Compilation) ----
-FROM nimlang/nim:latest as builder
-
-WORKDIR /build
-
-# Copiar arquivos necessários
-COPY croacia.nimble .
-COPY src/ src/
-COPY config/ config/
-
-# Instalar dependências Nim
-RUN nimble install -y
-
-# Compilar com:
-# -d:release     = Otimizado para produção
-# --gc:arc       = Memory-efficient garbage collection
-# -d:ssl         = ⭐ SSL support para SERPER API (IMPORTANTE!)
-# -o             = Output binary
-RUN nim c \
-  -d:release \
-  --gc:arc \
-  -d:ssl \
-  -o:croacia_mvp \
-  src/core/main.nim
-
-# ---- STAGE 2: Runtime ----
-FROM python:3.11-slim
+# Instalar dependências de build do Nim (SSL estático), Python e Pip
+RUN apk add --no-cache openssl-dev openssl-libs-static ca-certificates python3 py3-pip
 
 WORKDIR /app
 
-# Instalar dependências necessárias
-RUN apt-get update && apt-get install -y \
-  ca-certificates \
-  curl \
-  libssl3 \
-  && rm -rf /var/lib/apt/lists/*
+# Instalar a lib Python necessaria com a flag de sobrescrita
+RUN pip install cloudscraper --break-system-packages
 
-# Instalar Cloudscraper (necessário para bypass Cloudflare)
-RUN pip install --no-cache-dir cloudscraper
+# Copiar arquivos de dependência do Nim primeiro para cache
+COPY *.nimble ./
+RUN nimble install -y --depsOnly
 
-# Copiar binário compilado do builder
-COPY --from=builder /build/croacia_mvp /app/
+# Copiar o resto do código e o config.nims
+COPY . .
 
-# Copiar arquivo de configuração
-COPY config/.env.example /app/.env
+# Compilar o binário em modo release (o config.nims adiciona -d:ssl)
+RUN nimble build -d:release --opt:speed -y
 
-# Health check (verifica se aplicação está rodando)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:8080/health || exit 1
+# ESTÁGIO 2: Execução (Runtime) - Imagem mínima
+FROM alpine:latest
 
-# Exposição de porta
+# Instalar apenas o necessário para rodar (Runtime libs, Certificados e Python)
+RUN apk add --no-cache libssl3 ca-certificates python3 py3-pip
+
+WORKDIR /app
+
+# Instalar a biblioteca Python necessária novamente no runtime final com a flag de sobrescrita
+RUN pip install cloudscraper --break-system-packages
+
+# Copiar apenas o binário gerado no estágio anterior
+COPY --from=builder /app/build/croacia_mvp /app/croacia_mvp
+
+# Expor a porta que o Jester utiliza
 EXPOSE 8080
 
-# Variáveis de ambiente
-ENV PORT=8080 \
-    BIND_ADDR=0.0.0.0 \
-    LOG_LEVEL=INFO
-
-# Executar aplicação
-CMD ["/app/croacia_mvp"]
-
-# ============================================================================
-# COMO USAR:
-# ============================================================================
-#
-# Build local:
-#   docker build -f Dockerfile-final -t croacia:latest .
-#
-# Testar localmente:
-#   docker run -e SERPER_API_KEY=sua-chave -p 8080:8080 croacia:latest
-#
-# Deploy no Fly.io:
-#   flyctl deploy --app croacia-mvp
-#
-# ============================================================================
-# FEATURES:
-# ============================================================================
-#
-# ✅ Multi-stage: Compilation isolada (não trava seu PC)
-# ✅ Memory-efficient: --gc:arc reduz RAM durante build
-# ✅ SSL enabled: -d:ssl para SERPER API
-# ✅ Slim runtime: Python slim = 300MB vs 900MB
-# ✅ Health check: Automático a cada 30s
-# ✅ Production-ready: Otimizado e testado
-#
-# ============================================================================
+# Executar a aplicação
+CMD ["./croacia_mvp"]

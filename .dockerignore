@@ -1,81 +1,40 @@
-# =============================================================================
-# .dockerignore - Otimizado para Fly.io
-# =============================================================================
-# Remove arquivos desnecessários do build context
-# Reduz tamanho do build e tempo de deploy
-# =============================================================================
-
-# Git
-.git
-.gitignore
-.gitattributes
-
-# Build artifacts Nim
-**/.nimcache
-**/nimcache
+# Build artifacts
+nimcache/
+.nimcache/
+htmldocs/
 *.o
 *.out
-*.dblite
-htmldocs/
-
-# Executáveis
-**/croacia
-**/bin
-*.exe
-*.dll
-*.so
-*.dylib
-
-# Desenvolvimento
-.vscode
-.DS_Store
-**/*.swp
-**/*.swo
-**/*~
-
-# Node (se houver frontend)
-node_modules/
-npm-debug.log
-yarn-error.log
-
-# Python
-__pycache__
-*.pyc
-*.pyo
-*.egg-info/
-.Python
 build/
-dist/
 
-# Docker
-.dockerignore
-Dockerfile*
+# Development
+.git
+.github
+.gitignore
+.env
+.env.local
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Documentation
+*.md
+README.md
+DEPLOY_GUIDE.md
+
+# Test files
+tests/
+test.sh
 
 # CI/CD
-.github
+.github/
 .gitlab-ci.yml
-.circleci
+.travis.yml
 
-# Testes
-test/
-tests/
-**/*_test.nim
-
-# Logs
-*.log
-logs/
-
-# Ambiente local
-.env.local
-.env.development
-
-# Documentação (opcional - remover se quiser incluir)
-# docs/
-
-# Fly.io
-fly.toml
-
-# Misc
-tmp/
-temp/
-cache/
+# Others
+.DS_Store
+node_modules/
+__pycache__/
+*.pyc
+dist/
