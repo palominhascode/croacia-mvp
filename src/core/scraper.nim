@@ -39,23 +39,40 @@ const SERPER_API_URL = "https://google.serper.dev/search"
 const MAX_HTML_SIZE = 50000
 
 # ============================================================================
-# Scraping Functions
+# Scraping Functions - com DEBUGGER
 # ============================================================================
 
 proc fetchUrlsFromSerper*(query: string): Future[seq[string]] {.async, gcsafe.} =
   var results: seq[string] = @[]
+  var response: string = ""
 
   try:
     echo "[SERPER] Buscando: ", query
+    echo "[DEBUG] SERPER_API_KEY length: ", SERPER_API_KEY.len
+    echo "[DEBUG] SERPER_API_URL: ", SERPER_API_URL
+    
     var client = newHttpClient()
+    client.timeout = 15000
+    
+    echo "[DEBUG] Headers que vão ser enviados:"
+    echo "[DEBUG]   x-api-key: ", SERPER_API_KEY[0..min(9, SERPER_API_KEY.len-1)], "..."
+    echo "[DEBUG]   Content-Type: application/json"
+    
     client.headers = newHttpHeaders({
-      "X-API-Key": SERPER_API_KEY,
-      "Content-Type": "application/json"
+      "x-api-key": SERPER_API_KEY,
+      "Content-Type": "application/json",
+      "User-Agent": "Croacia-MVP/1.0"
     })
-    client.timeout = 5000
-
+    
     let payload = %*{"q": query, "num": 5}
-    let response = client.postContent(SERPER_API_URL, $payload)
+    echo "[DEBUG] Payload JSON: ", $payload
+    
+    echo "[DEBUG] Fazendo POST request..."
+    response = client.postContent(SERPER_API_URL, $payload)
+    
+    echo "[DEBUG] Response HTTP recebido com ", response.len, " bytes"
+    echo "[DEBUG] Response preview: ", response[0..min(300, response.len-1)]
+    
     let data = parseJson(response)
 
     if data.hasKey("organic"):
@@ -67,12 +84,18 @@ proc fetchUrlsFromSerper*(query: string): Future[seq[string]] {.async, gcsafe.} 
 
     echo "[SERPER] URLs encontradas: ", results.len
 
-  except OSError:
-    echo "[SERPER ERROR] Timeout"
+  except HttpRequestError as e:
+    echo "[SERPER ERROR] HttpRequestError: ", e.msg
+    echo "[DEBUG] HTTP Status/Response: ", response[0..min(200, response.len-1)]
+  except OSError as e:
+    echo "[SERPER ERROR] OSError: ", e.msg
   except JsonParsingError as e:
-    echo "[SERPER ERROR] JSON: ", e.msg
+    echo "[SERPER ERROR] JSON Parse Error: ", e.msg
+    echo "[DEBUG] Response: ", response[0..min(300, response.len-1)]
   except Exception as e:
-    echo "[SERPER ERROR] ", e.msg
+    echo "[SERPER ERROR] Exception: ", e.msg
+    echo "[DEBUG] Type: ", e.name
+    echo "[DEBUG] Response: ", response[0..min(300, response.len-1)]
 
   return results
 
