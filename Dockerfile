@@ -6,9 +6,6 @@ RUN apk add --no-cache openssl-dev openssl-libs-static ca-certificates python3 p
 
 WORKDIR /app
 
-# Instalar a lib Python necessaria com a flag de sobrescrita
-RUN pip install cloudscraper --break-system-packages
-
 # Copiar arquivos de dependência do Nim primeiro para cache
 COPY *.nimble ./
 RUN nimble install -y --depsOnly
@@ -17,7 +14,19 @@ RUN nimble install -y --depsOnly
 COPY . .
 
 # Compilar o binário em modo release (o config.nims adiciona -d:ssl)
-RUN nimble build -d:release --opt:speed -y
+# RUN nimble build -d:release -y
+
+# Criar diretório build se não existir
+RUN mkdir -p /app/build
+
+# Compilar diretamente com Nim em vez de nimble
+RUN nim c \
+    -d:release \
+    --opt:speed \
+    -d:ssl \
+    --passL:"-L/usr/lib -lssl -lcrypto" \
+    -o:build/croacia_mvp \
+    src/core/croacia_mvp.nim
 
 # ESTÁGIO 2: Execução (Runtime) - Imagem mínima
 FROM alpine:latest

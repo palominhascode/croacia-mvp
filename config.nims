@@ -1,4 +1,12 @@
-# config.nims na raiz do projeto
+# Forçar SSL
+switch("d", "ssl")
+switch("d", "useOpenssl")
 
-# Define SSL como obrigatório para todas as compilações
-switch("define", "ssl")
+# Flags de compilação
+switch("opt", "speed")
+switch("passL", "-lssl -lcrypto")
+
+# Para release
+when defined(release):
+  switch("d", "release")
+  switch("opt", "speed")
