@@ -85,6 +85,11 @@ when isMainModule:
   echo "╚" & "═".repeat(78) & "╝"
   echo ""
   
+  # ← INICIALIZAR SECRETS ANTES DO JESTER
+  echo "[MAIN] Inicializando secrets..."
+  initializeSecrets()
+  echo "[MAIN] ✓ Secrets carregados!"
+  
   echo "[INIT] 🚀 Servidor iniciando em 0.0.0.0:8080..."
   echo ""
   

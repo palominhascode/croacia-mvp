@@ -1,25 +1,41 @@
-# ESTÁGIO 1: Compilação (Build)
+# ============================================================================
+# CROACIA MVP - Multi-Stage Dockerfile with Compile-Time Secrets
+# ============================================================================
+# Stage 1: Build with SERPER_API_KEY injected at compile-time
+# Stage 2: Minimal runtime with Python for Cloudscraper fallback
+# ============================================================================
+
+# ============================================================================
+# STAGE 1: Build
+# ============================================================================
 FROM nimlang/nim:2.2.6-alpine-regular AS builder
 
-# Instalar dependências de build do Nim (SSL estático), Python e Pip
-RUN apk add --no-cache openssl-dev openssl-libs-static ca-certificates python3 py3-pip
+# Install build dependencies (SSL, Python, Pip)
+RUN apk add --no-cache \
+    openssl-dev \
+    openssl-libs-static \
+    ca-certificates \
+    python3 \
+    py3-pip
 
 WORKDIR /app
 
-# Copiar arquivos de dependência do Nim primeiro para cache
+# Accept build-time secret from Fly.io
+ARG SERPER_API_KEY
+ENV SERPER_API_KEY=${SERPER_API_KEY}
+
+# Copy Nim dependencies first for Docker layer caching
 COPY *.nimble ./
 RUN nimble install -y --depsOnly
 
-# Copiar o resto do código e o config.nims
+# Copy application source code
 COPY . .
 
-# Compilar o binário em modo release (o config.nims adiciona -d:ssl)
-# RUN nimble build -d:release -y
-
-# Criar diretório build se não existir
+# Create build directory
 RUN mkdir -p /app/build
 
-# Compilar diretamente com Nim em vez de nimble
+# Compile binary with compile-time secrets embedded
+# The staticExec("echo $SERPER_API_KEY") in scraper.nim will read this
 RUN nim c \
     -d:release \
     --opt:speed \
@@ -28,22 +44,32 @@ RUN nim c \
     -o:build/croacia_mvp \
     src/core/croacia_mvp.nim
 
-# ESTÁGIO 2: Execução (Runtime) - Imagem mínima
+# ============================================================================
+# STAGE 2: Runtime
+# ============================================================================
 FROM alpine:latest
 
-# Instalar apenas o necessário para rodar (Runtime libs, Certificados e Python)
-RUN apk add --no-cache libssl3 ca-certificates python3 py3-pip
+# Install runtime dependencies only (SSL libs, Python, CA certs)
+RUN apk add --no-cache \
+    libssl3 \
+    ca-certificates \
+    python3 \
+    py3-pip
 
 WORKDIR /app
 
-# Instalar a biblioteca Python necessária novamente no runtime final com a flag de sobrescrita
+# Install Cloudscraper for Cloudflare bypass fallback
 RUN pip install cloudscraper --break-system-packages
 
-# Copiar apenas o binário gerado no estágio anterior
+# Copy compiled binary from builder stage
 COPY --from=builder /app/build/croacia_mvp /app/croacia_mvp
 
-# Expor a porta que o Jester utiliza
+# Expose Jester port
 EXPOSE 8080
 
-# Executar a aplicação
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+
+# Run application
 CMD ["./croacia_mvp"]

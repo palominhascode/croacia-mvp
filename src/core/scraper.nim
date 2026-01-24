@@ -6,6 +6,7 @@
 # ✅ HTML VOLUMOSO (50KB) para IA
 # ✅ SEGURO - sem cache_manager (causa SIGSEGV)
 # ✅ COM CLOUDSCRAPER FALLBACK (HTTP → Cloudscraper chain)
+# ✅ Secrets via compile-time (seguro)
 # ============================================================================
 
 import httpClient
@@ -13,7 +14,6 @@ import json
 import strutils
 import times
 import asyncdispatch
-import os
 import ../bridge/cloudscraper_bridge
 
 # ============================================================================
@@ -31,15 +31,22 @@ type
     timestamp*: int64
 
 # ============================================================================
-# Configuration
+# Configuration - Compile-time secrets
 # ============================================================================
 
-const SERPER_API_KEY = getEnv("SERPER_API_KEY")
+const SERPER_API_KEY = staticExec("echo $SERPER_API_KEY")
 const SERPER_API_URL = "https://google.serper.dev/search"
 const MAX_HTML_SIZE = 50000
 
+proc initializeSecrets*() =
+  echo "[INIT] ✓ Secrets carregados via compile-time"
+  when defined(release):
+    if SERPER_API_KEY.len < 10:
+      echo "[ERROR] SERPER_API_KEY vazio ou inválido!"
+      quit(1)
+
 # ============================================================================
-# Scraping Functions - com DEBUGGER
+# Scraping Functions
 # ============================================================================
 
 proc fetchUrlsFromSerper*(query: string): Future[seq[string]] {.async, gcsafe.} =
@@ -48,15 +55,9 @@ proc fetchUrlsFromSerper*(query: string): Future[seq[string]] {.async, gcsafe.} 
 
   try:
     echo "[SERPER] Buscando: ", query
-    echo "[DEBUG] SERPER_API_KEY length: ", SERPER_API_KEY.len
-    echo "[DEBUG] SERPER_API_URL: ", SERPER_API_URL
     
     var client = newHttpClient()
     client.timeout = 15000
-    
-    echo "[DEBUG] Headers que vão ser enviados:"
-    echo "[DEBUG]   x-api-key: ", SERPER_API_KEY[0..min(9, SERPER_API_KEY.len-1)], "..."
-    echo "[DEBUG]   Content-Type: application/json"
     
     client.headers = newHttpHeaders({
       "x-api-key": SERPER_API_KEY,
@@ -65,13 +66,7 @@ proc fetchUrlsFromSerper*(query: string): Future[seq[string]] {.async, gcsafe.} 
     })
     
     let payload = %*{"q": query, "num": 5}
-    echo "[DEBUG] Payload JSON: ", $payload
-    
-    echo "[DEBUG] Fazendo POST request..."
     response = client.postContent(SERPER_API_URL, $payload)
-    
-    echo "[DEBUG] Response HTTP recebido com ", response.len, " bytes"
-    echo "[DEBUG] Response preview: ", response[0..min(300, response.len-1)]
     
     let data = parseJson(response)
 
@@ -82,20 +77,10 @@ proc fetchUrlsFromSerper*(query: string): Future[seq[string]] {.async, gcsafe.} 
           if link.len > 0 and link.len < 500:
             results.add(link)
 
-    echo "[SERPER] URLs encontradas: ", results.len
+    echo "[SERPER] ✓ ", results.len, " URLs encontradas"
 
-  except HttpRequestError as e:
-    echo "[SERPER ERROR] HttpRequestError: ", e.msg
-    echo "[DEBUG] HTTP Status/Response: ", response[0..min(200, response.len-1)]
-  except OSError as e:
-    echo "[SERPER ERROR] OSError: ", e.msg
-  except JsonParsingError as e:
-    echo "[SERPER ERROR] JSON Parse Error: ", e.msg
-    echo "[DEBUG] Response: ", response[0..min(300, response.len-1)]
   except Exception as e:
-    echo "[SERPER ERROR] Exception: ", e.msg
-    echo "[DEBUG] Type: ", e.name
-    echo "[DEBUG] Response: ", response[0..min(300, response.len-1)]
+    echo "[SERPER ERROR] ", e.msg
 
   return results
 
@@ -104,7 +89,6 @@ proc normalizeToHomepage*(url: string): string =
     let queryIdx = normalized.find("?")
     if queryIdx > 0:
         normalized = normalized[0..<queryIdx]
-    # Remover trailing slash apenas se houver
     if normalized.endsWith("/"):
         normalized = normalized[0..<(normalized.len - 1)]
     return normalized
@@ -151,10 +135,8 @@ proc extractTextContent*(html: string): string =
     return ""
 
 # ============================================================================
-# NOVA FUNÇÃO: fetchUrlWithFallback
+# Fetch with HTTP → Cloudscraper Fallback
 # ============================================================================
-# Esta função implementa o chain: HTTP simples → Cloudscraper fallback
-# Usada em scrapePage para suportar Cloudflare
 
 proc fetchUrlWithFallback*(url: string): Future[string] {.async.} =
   let homepageUrl = normalizeToHomepage(url)
@@ -184,7 +166,7 @@ proc fetchUrlWithFallback*(url: string): Future[string] {.async.} =
   return ""
 
 # ============================================================================
-# MODIFICADA: scrapePage com fetchUrlWithFallback
+# Scrape Page
 # ============================================================================
 
 proc scrapePage*(url: string): Future[ScrapedResult] {.async, gcsafe.} =
@@ -202,7 +184,6 @@ proc scrapePage*(url: string): Future[ScrapedResult] {.async, gcsafe.} =
     let homepageUrl = normalizeToHomepage(url)
     echo "[SCRAPER] Buscando: ", homepageUrl
 
-    # ← USAR NOVO fetchUrlWithFallback (HTTP → Cloudscraper chain)
     let html = await fetchUrlWithFallback(homepageUrl)
 
     if html.len == 0:
@@ -210,7 +191,6 @@ proc scrapePage*(url: string): Future[ScrapedResult] {.async, gcsafe.} =
       scraped.error = "HTTP e Cloudscraper retornaram vazio"
       return scraped
 
-    # Limpar tamanho do HTML se necessário
     var cleanHtml = html
     if cleanHtml.len > MAX_HTML_SIZE:
       cleanHtml = cleanHtml[0..<MAX_HTML_SIZE]
@@ -247,6 +227,10 @@ proc scrapePage*(url: string): Future[ScrapedResult] {.async, gcsafe.} =
 
   return scraped
 
+# ============================================================================
+# Analyze Keyword
+# ============================================================================
+
 proc analyzeKeyword*(keyword: string, maxResults: int = 5): Future[seq[ScrapedResult]] {.async, gcsafe.} =
   echo "[ANALYZE] Iniciando: ", keyword
   var results: seq[ScrapedResult] = @[]
@@ -255,7 +239,7 @@ proc analyzeKeyword*(keyword: string, maxResults: int = 5): Future[seq[ScrapedRe
     let urls = await fetchUrlsFromSerper(keyword)
 
     if urls.len == 0:
-      echo "[ANALYZE] Nenhuma URL"
+      echo "[ANALYZE] Nenhuma URL encontrada"
       return @[]
 
     echo "[ANALYZE] Scrapando ", urls.len, " URLs..."
@@ -266,15 +250,13 @@ proc analyzeKeyword*(keyword: string, maxResults: int = 5): Future[seq[ScrapedRe
         let scraped = await scrapePage(url)
 
         if scraped.url.len > 0 and scraped.url.len < 2000:
-          echo "[ANALYZE] Adicionando resultado..."
           results.add(scraped)
-          echo "[ANALYZE] Total: ", results.len
 
       except Exception as e:
         echo "[ANALYZE] Skip: ", e.msg
         continue
 
-    echo "[ANALYZE] Concluído: ", results.len, " resultados (com Cloudscraper fallback)"
+    echo "[ANALYZE] ✓ ", results.len, " resultados obtidos"
 
   except Exception as e:
     echo "[ANALYZE ERROR] ", e.msg
@@ -327,21 +309,16 @@ proc toJsonNode*(res: ScrapedResult): JsonNode =
 
 proc toJsonArray*(results: seq[ScrapedResult]): JsonNode =
   try:
-    echo "[JSON] Convertendo ", results.len, " resultados..."
     var arr = newJArray()
 
-    for i, res in results:
+    for res in results:
       try:
-        echo "[JSON] Resultado ", i + 1, "/", results.len
         let node = toJsonNode(res)
         arr.add(node)
-        echo "[JSON] OK"
-
       except Exception as e:
         echo "[JSON] Skip: ", e.msg
         continue
 
-    echo "[JSON] Array pronto: ", arr.len, " items"
     return arr
 
   except Exception as e:
