@@ -7,6 +7,7 @@
 # ✅ SEGURO - sem cache_manager (causa SIGSEGV)
 # ✅ COM CLOUDSCRAPER FALLBACK (HTTP → Cloudscraper chain)
 # ✅ Secrets via runtime env (GC-safe)
+# ✅ Suporte a geolocalização (gl) e idioma (hl)
 # ============================================================================
 
 import os
@@ -66,12 +67,12 @@ proc MAX_HTML_SIZE(): int {.inline.} = gMaxHtmlSize
 # Scraping Functions
 # ============================================================================
 
-proc fetchUrlsFromSerper*(query: string): Future[seq[string]] {.async, gcsafe.} =
+proc fetchUrlsFromSerper*(query: string, countryCode: string = "br", language: string = "pt-BR"): Future[seq[string]] {.async, gcsafe.} =
   var results: seq[string] = @[]
   var response: string = ""
 
   try:
-    echo "[SERPER] Buscando: ", query
+    echo "[SERPER] Buscando: ", query, " | País: ", countryCode, " | Idioma: ", language
     
     var client = newHttpClient()
     client.timeout = 15000
@@ -82,7 +83,12 @@ proc fetchUrlsFromSerper*(query: string): Future[seq[string]] {.async, gcsafe.} 
       "User-Agent": "Croacia-MVP/1.0"
     })
     
-    let payload = %*{"q": query, "num": 5}
+    let payload = %*{
+      "q": query,
+      "num": 5,
+      "gl": countryCode,
+      "hl": language
+    }
     response = client.postContent(SERPER_API_URL(), $payload)
     
     let data = parseJson(response)
@@ -94,7 +100,7 @@ proc fetchUrlsFromSerper*(query: string): Future[seq[string]] {.async, gcsafe.} 
           if link.len > 0 and link.len < 500:
             results.add(link)
 
-    echo "[SERPER] ✓ ", results.len, " URLs encontradas"
+    echo "[SERPER] ✓ ", results.len, " URLs encontradas (", countryCode, ")"
 
   except Exception as e:
     echo "[SERPER ERROR] ", e.msg
@@ -249,12 +255,12 @@ proc scrapePage*(url: string): Future[ScrapedResult] {.async, gcsafe.} =
 # Analyze Keyword
 # ============================================================================
 
-proc analyzeKeyword*(keyword: string, maxResults: int = 5): Future[seq[ScrapedResult]] {.async, gcsafe.} =
-  echo "[ANALYZE] Iniciando: ", keyword
+proc analyzeKeyword*(keyword: string, maxResults: int = 5, countryCode: string = "br", language: string = "pt-BR"): Future[seq[ScrapedResult]] {.async, gcsafe.} =
+  echo "[ANALYZE] Iniciando: ", keyword, " | País: ", countryCode
   var results: seq[ScrapedResult] = @[]
 
   try:
-    let urls = await fetchUrlsFromSerper(keyword)
+    let urls = await fetchUrlsFromSerper(keyword, countryCode, language)
 
     if urls.len == 0:
       echo "[ANALYZE] Nenhuma URL encontrada"
@@ -274,7 +280,7 @@ proc analyzeKeyword*(keyword: string, maxResults: int = 5): Future[seq[ScrapedRe
         echo "[ANALYZE] Skip: ", e.msg
         continue
 
-    echo "[ANALYZE] ✓ ", results.len, " resultados obtidos"
+    echo "[ANALYZE] ✓ ", results.len, " resultados obtidos (", countryCode, ")"
 
   except Exception as e:
     echo "[ANALYZE ERROR] ", e.msg
