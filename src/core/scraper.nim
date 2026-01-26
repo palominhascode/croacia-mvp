@@ -33,35 +33,48 @@ type
     timestamp*: int64
 
 # ============================================================================
-# Configuration - Runtime secrets (GC-safe com threadvar)
+# Configuration - Runtime secrets (GC-safe com threadvar + lazy init)
 # ============================================================================
 
 var gSerperApiKey {.threadvar.}: string
 var gSerperApiUrl {.threadvar.}: string
 var gMaxHtmlSize {.threadvar.}: int
+var gInitialized {.threadvar.}: bool
+
+proc ensureInitialized() {.inline.} =
+  ## Garante inicialização lazy (funciona em todas as threads)
+  if not gInitialized:
+    gSerperApiKey = getEnv("SERPER_API_KEY", "")
+    gSerperApiUrl = "https://google.serper.dev/search"
+    gMaxHtmlSize = 100000
+    gInitialized = true
+    
+    if gSerperApiKey.len == 0:
+      echo "[ERROR] SERPER_API_KEY não encontrada!"
+      quit(1)
+    
+    if gSerperApiKey.len < 10:
+      echo "[ERROR] SERPER_API_KEY inválida (muito curta)!"
+      quit(1)
 
 proc initializeSecrets*() =
+  ## Inicialização explícita (compatibilidade)
   echo "[INIT] ✓ Carregando secrets do ambiente..."
-  
-  gSerperApiKey = getEnv("SERPER_API_KEY", "")
-  gSerperApiUrl = "https://google.serper.dev/search"
-  gMaxHtmlSize = 100000
-  
-  if gSerperApiKey.len == 0:
-    echo "[ERROR] SERPER_API_KEY não encontrada!"
-    echo "[ERROR] Configure: flyctl secrets set SERPER_API_KEY=your_key -a croacia-mvp"
-    quit(1)
-  
-  if gSerperApiKey.len < 10:
-    echo "[ERROR] SERPER_API_KEY inválida (muito curta)!"
-    quit(1)
-  
+  ensureInitialized()
   echo "[INIT] ✓ API Key válida (", gSerperApiKey.len, " caracteres)"
 
-# Getters GC-safe
-proc SERPER_API_KEY(): string {.inline.} = gSerperApiKey
-proc SERPER_API_URL(): string {.inline.} = gSerperApiUrl
-proc MAX_HTML_SIZE(): int {.inline.} = gMaxHtmlSize
+# Getters GC-safe com lazy initialization
+proc SERPER_API_KEY(): string {.inline.} = 
+  ensureInitialized()
+  gSerperApiKey
+
+proc SERPER_API_URL(): string {.inline.} = 
+  ensureInitialized()
+  gSerperApiUrl
+
+proc MAX_HTML_SIZE(): int {.inline.} = 
+  ensureInitialized()
+  gMaxHtmlSize
 
 # ============================================================================
 # Scraping Functions
@@ -163,6 +176,7 @@ proc extractTextContent*(html: string): string =
 
 proc fetchUrlWithFallback*(url: string): Future[string] {.async.} =
   let homepageUrl = normalizeToHomepage(url)
+  let maxSize = MAX_HTML_SIZE()
 
   # PASSO 1: Tentar HTTP simples (rápido)
   try:
@@ -173,7 +187,7 @@ proc fetchUrlWithFallback*(url: string): Future[string] {.async.} =
 
     if html.len > 100:
       echo "[FETCH] ✅ HTTP OK"
-      return html[0..min(html.len - 1, 49999)]
+      return html[0..min(html.len - 1, maxSize - 1)]  # ✅ CORRETO
 
   except:
     discard
@@ -184,7 +198,11 @@ proc fetchUrlWithFallback*(url: string): Future[string] {.async.} =
 
   if cfResponse.status == "success" and cfResponse.html.len > 100:
     echo "[FETCH] ✅ Cloudscraper OK"
-    return cfResponse.html
+    let html = cfResponse.html
+    # ❌ ERRO: Você esqueceu de aplicar o limite aqui!
+    # return cfResponse.html
+    # ✅ CORRETO: Aplicar o limite também
+    return html[0..min(html.len - 1, maxSize - 1)]
 
   return ""
 
