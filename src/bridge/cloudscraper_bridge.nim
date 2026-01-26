@@ -9,8 +9,8 @@ import json
 import strutils
 import asyncdispatch
 import osproc
-import posix       # ← ADICIONADO (para getpid)
-import random      # ← ADICIONADO (para ID único)
+import posix # ← ADICIONADO (para getpid)
+import random # ← ADICIONADO (para ID único)
 
 # ============================================================================
 # Type Definitions
@@ -42,10 +42,11 @@ proc getRandomPid(): string {.inline.} =
 # Scraping Functions
 # ============================================================================
 
-proc fetchWithCloudscraperSync*(url: string, attempt: int = 1): CloudscraperResponse =
+proc fetchWithCloudscraperSync*(url: string,
+    attempt: int = 1): CloudscraperResponse =
   let uniqueId = getRandomPid()
   let sanitizedUrl = url.replace("\"", "\\\"")
-  
+
   let pythonScript = """
 import cloudscraper
 import json
@@ -85,20 +86,21 @@ except Exception as e:
     }
     print(json.dumps(result))
 """
-  
+
   try:
-    echo "[CLOUDSCRAPER] Tentativa ", attempt, "/", CLOUDSCRAPER_RETRIES, " para: ", url
-    
+    echo "[CLOUDSCRAPER] Tentativa ", attempt, "/", CLOUDSCRAPER_RETRIES,
+        " para: ", url
+
     let scriptFile = "/tmp/cloudscraper_fetch_" & uniqueId & ".py"
     let f = open(scriptFile, fmWrite)
     f.write(pythonScript)
     f.close()
-    
+
     let cmd = "python3 " & scriptFile & " \"" & sanitizedUrl & "\""
     let (output, exitCode) = execCmdEx(cmd)
-    
+
     discard execCmd("rm -f " & scriptFile)
-    
+
     if exitCode == 0 and output.len > 0:
       try:
         let jsonResponse = parseJson(output)
@@ -137,12 +139,13 @@ except Exception as e:
       cf_cleared: false
     )
 
-proc fetchWithCloudscraperAsync*(url: string): Future[CloudscraperResponse] {.async, gcsafe.} =
+proc fetchWithCloudscraperAsync*(url: string): Future[
+    CloudscraperResponse] {.async, gcsafe.} =
   var response: CloudscraperResponse
-  
+
   for attempt in 1..CLOUDSCRAPER_RETRIES:
     response = fetchWithCloudscraperSync(url, attempt)
-    
+
     if response.status == "success" and response.cf_cleared:
       echo "[CLOUDSCRAPER] ✅ SUCESSO (tentativa ", attempt, ")"
       return response
@@ -154,22 +157,22 @@ proc fetchWithCloudscraperAsync*(url: string): Future[CloudscraperResponse] {.as
       echo "[CLOUDSCRAPER] ❌ Falha: ", response.error_msg
       if attempt < CLOUDSCRAPER_RETRIES:
         await sleepAsync(2000)
-  
+
   return response
 
 proc isCloudflareProtected*(url: string): bool =
   let cf_indicators = ["cloudflare", "protected", "challenge"]
   let cf_domains = ["linkedin.com", "pinterest.com", "discord.com", "stripe.com"]
-  
+
   let urlLower = url.toLowerAscii()
   for indicator in cf_indicators:
     if indicator in urlLower:
       return true
-  
+
   for domain in cf_domains:
     if domain in urlLower:
       return true
-  
+
   return false
 
 proc getCloudscraperStatus*(): bool =

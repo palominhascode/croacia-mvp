@@ -18,7 +18,7 @@ proc log*(level: LogLevel, message: string) =
     of INFO: "[INFO]"
     of WARN: "[WARN]"
     of ERROR: "[ERROR]"
-  
+
   echo "[" & timestamp & "] " & levelStr & " " & message
 
 proc logDebug*(msg: string) = log(DEBUG, msg)

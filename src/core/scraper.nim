@@ -48,11 +48,11 @@ proc ensureInitialized() {.inline.} =
     gSerperApiUrl = "https://google.serper.dev/search"
     gMaxHtmlSize = 100000
     gInitialized = true
-    
+
     if gSerperApiKey.len == 0:
       echo "[ERROR] SERPER_API_KEY não encontrada!"
       quit(1)
-    
+
     if gSerperApiKey.len < 10:
       echo "[ERROR] SERPER_API_KEY inválida (muito curta)!"
       quit(1)
@@ -64,15 +64,15 @@ proc initializeSecrets*() =
   echo "[INIT] ✓ API Key válida (", gSerperApiKey.len, " caracteres)"
 
 # Getters GC-safe com lazy initialization
-proc SERPER_API_KEY(): string {.inline.} = 
+proc SERPER_API_KEY(): string {.inline.} =
   ensureInitialized()
   gSerperApiKey
 
-proc SERPER_API_URL(): string {.inline.} = 
+proc SERPER_API_URL(): string {.inline.} =
   ensureInitialized()
   gSerperApiUrl
 
-proc MAX_HTML_SIZE(): int {.inline.} = 
+proc MAX_HTML_SIZE(): int {.inline.} =
   ensureInitialized()
   gMaxHtmlSize
 
@@ -80,22 +80,23 @@ proc MAX_HTML_SIZE(): int {.inline.} =
 # Scraping Functions
 # ============================================================================
 
-proc fetchUrlsFromSerper*(query: string, countryCode: string = "br", language: string = "pt-BR"): Future[seq[string]] {.async, gcsafe.} =
+proc fetchUrlsFromSerper*(query: string, countryCode: string = "br",
+    language: string = "pt-BR"): Future[seq[string]] {.async, gcsafe.} =
   var results: seq[string] = @[]
   var response: string = ""
 
   try:
     echo "[SERPER] Buscando: ", query, " | País: ", countryCode, " | Idioma: ", language
-    
+
     var client = newHttpClient()
     client.timeout = 15000
-    
+
     client.headers = newHttpHeaders({
       "x-api-key": SERPER_API_KEY(),
       "Content-Type": "application/json",
       "User-Agent": "Croacia-MVP/1.0"
     })
-    
+
     let payload = %*{
       "q": query,
       "num": 5,
@@ -103,7 +104,7 @@ proc fetchUrlsFromSerper*(query: string, countryCode: string = "br", language: s
       "hl": language
     }
     response = client.postContent(SERPER_API_URL(), $payload)
-    
+
     let data = parseJson(response)
 
     if data.hasKey("organic"):
@@ -121,13 +122,13 @@ proc fetchUrlsFromSerper*(query: string, countryCode: string = "br", language: s
   return results
 
 proc normalizeToHomepage*(url: string): string =
-    var normalized = url
-    let queryIdx = normalized.find("?")
-    if queryIdx > 0:
-        normalized = normalized[0..<queryIdx]
-    if normalized.endsWith("/"):
-        normalized = normalized[0..<(normalized.len - 1)]
-    return normalized
+  var normalized = url
+  let queryIdx = normalized.find("?")
+  if queryIdx > 0:
+    normalized = normalized[0..<queryIdx]
+  if normalized.endsWith("/"):
+    normalized = normalized[0..<(normalized.len - 1)]
+  return normalized
 
 proc safeStringChunk*(s: string, start: int, chunkSize: int): string =
   try:
@@ -187,7 +188,7 @@ proc fetchUrlWithFallback*(url: string): Future[string] {.async.} =
 
     if html.len > 100:
       echo "[FETCH] ✅ HTTP OK"
-      return html[0..min(html.len - 1, maxSize - 1)]  # ✅ CORRETO
+      return html[0..min(html.len - 1, maxSize - 1)] # ✅ CORRETO
 
   except:
     discard
@@ -247,7 +248,8 @@ proc scrapePage*(url: string): Future[ScrapedResult] {.async, gcsafe.} =
         if titleEnd > titleStart + 7:
           let titleLen = titleEnd - titleStart - 7
           if titleLen > 0 and titleLen <= 500:
-            scraped.title = safeStringChunk(cleanHtml, titleStart + 7, titleLen).strip()
+            scraped.title = safeStringChunk(cleanHtml, titleStart + 7,
+                titleLen).strip()
     except:
       scraped.title = ""
 
@@ -273,7 +275,9 @@ proc scrapePage*(url: string): Future[ScrapedResult] {.async, gcsafe.} =
 # Analyze Keyword
 # ============================================================================
 
-proc analyzeKeyword*(keyword: string, maxResults: int = 5, countryCode: string = "br", language: string = "pt-BR"): Future[seq[ScrapedResult]] {.async, gcsafe.} =
+proc analyzeKeyword*(keyword: string, maxResults: int = 5,
+    countryCode: string = "br", language: string = "pt-BR"): Future[seq[
+    ScrapedResult]] {.async, gcsafe.} =
   echo "[ANALYZE] Iniciando: ", keyword, " | País: ", countryCode
   var results: seq[ScrapedResult] = @[]
 

@@ -48,22 +48,22 @@ routes:
     try:
       let body = request.body
       let params = parseJson(body)
-      
+
       # Query obrigatória
       let query = params{"query"}.getStr("test")
-      
+
       # Max results (padrão: 5)
       let maxResults = if params.hasKey("max_results"):
         params{"max_results"}.getInt(5)
       else:
         5
-      
+
       # Country code (padrão: br)
       let countryCode = if params.hasKey("country"):
         params{"country"}.getStr("br")
       else:
         "br"
-      
+
       # Language (auto-detecta baseado no país ou usa padrão)
       let language = if params.hasKey("language"):
         params{"language"}.getStr("")
@@ -83,10 +83,11 @@ routes:
         of "cn": "zh-CN"
         else: "en"
 
-      echo "[API] Query: ", query, " | Max: ", maxResults, " | País: ", countryCode, " | Lang: ", language
+      echo "[API] Query: ", query, " | Max: ", maxResults, " | País: ",
+          countryCode, " | Lang: ", language
 
       let results = waitFor analyzeKeyword(query, maxResults, countryCode, language)
-      
+
       let response = %*{
         "status": "success",
         "query": query,
@@ -95,7 +96,7 @@ routes:
         "total": results.len,
         "results": toJsonArray(results)
       }
-      
+
       resp(response)
 
     except Exception as e:
@@ -114,12 +115,13 @@ when isMainModule:
   echo "╔" & "═".repeat(78) & "╗"
   echo "║" & " CROACIA MVP - STATELESS ARCHITECTURE".alignLeft(78) & "║"
   echo "╠" & "═".repeat(78) & "╣"
-  echo "║" & " Features: Geo-targeting | Cloudscraper | 50KB HTML".alignLeft(78) & "║"
+  echo "║" & " Features: Geo-targeting | Cloudscraper | 50KB HTML".alignLeft(
+      78) & "║"
   echo "╚" & "═".repeat(78) & "╝"
   echo ""
   echo "[INIT] 🚀 Servidor iniciando em 0.0.0.0:8080..."
   echo ""
-  
+
   runForever()
-  
+
   echo "[SHUTDOWN] ✅ Servidor finalizado gracefully"
