@@ -8,7 +8,6 @@ htmldocs/
 *.dll
 *.so
 *.dylib
-croacia
 bin/
 .env.local
 .DS_Store
@@ -22,5 +21,4 @@ dist/
 *.sh
 *.env
 docker-compose.yaml
-build/croacia_mvp
 build/croacia_mvp
