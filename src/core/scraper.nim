@@ -45,7 +45,7 @@ proc initializeSecrets*() =
   
   gSerperApiKey = getEnv("SERPER_API_KEY", "")
   gSerperApiUrl = "https://google.serper.dev/search"
-  gMaxHtmlSize = 50000
+  gMaxHtmlSize = 100000
   
   if gSerperApiKey.len == 0:
     echo "[ERROR] SERPER_API_KEY não encontrada!"
