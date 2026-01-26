@@ -1,10 +1,6 @@
 # ============================================================================
 # CROACIA MVP - Main API Server (SEM CACHE_MANAGER)
 # ============================================================================
-# ✅ Removido cache_manager (causava SIGSEGV)
-# ✅ Usa apenas scraper estateless
-# ✅ Simples, direto, funciona
-# ============================================================================
 
 import pkg/jesterfork
 import asyncdispatch
@@ -12,6 +8,11 @@ import json
 import strutils
 import times
 import scraper
+
+# ============================================================================
+# CRITICAL: Initialize secrets IMMEDIATELY (before settings/routes)
+# ============================================================================
+initializeSecrets()
 
 # ============================================================================
 # Server Configuration
@@ -26,11 +27,9 @@ settings:
 # ============================================================================
 
 routes:
-  # GET /
   get "/":
     resp "🚀 Croacia MVP - Competitive Intelligence API (Stateless)"
 
-  # GET /health
   get "/health":
     resp(%*{
       "status": "ok",
@@ -39,7 +38,6 @@ routes:
       "gc_safe": true
     })
 
-  # POST /analyze
   post "/analyze":
     try:
       let body = request.body
@@ -52,7 +50,6 @@ routes:
 
       echo "[API] Query: ", query, " | Max: ", maxResults
 
-      # ✅ Chamar analyzeKeyword diretamente (sem cache)
       let results = waitFor analyzeKeyword(query, maxResults)
       
       let response = %*{
@@ -72,28 +69,18 @@ routes:
       })
 
 # ============================================================================
-# Program Startup & Shutdown
+# Program Startup
 # ============================================================================
 
 when isMainModule:
   echo ""
   echo "╔" & "═".repeat(78) & "╗"
-  echo "║" & " CROACIA MVP - STATELESS ARCHITECTURE (50KB HTML for AI)".alignLeft(78) & "║"
-  echo "╠" & "═".repeat(78) & "╣"
-  echo "║" & " Compile: Nim 2.2.6+ | Framework: Jesterfork | API: SERPER".alignLeft(78) & "║"
-  echo "║" & " Mode: Stateless (no cache) | Deploy: Fly.io".alignLeft(78) & "║"
+  echo "║" & " CROACIA MVP - STATELESS ARCHITECTURE".alignLeft(78) & "║"
   echo "╚" & "═".repeat(78) & "╝"
   echo ""
-  
-  # ← INICIALIZAR SECRETS ANTES DO JESTER
-  echo "[MAIN] Inicializando secrets..."
-  initializeSecrets()
-  echo "[MAIN] ✓ Secrets carregados!"
-  
   echo "[INIT] 🚀 Servidor iniciando em 0.0.0.0:8080..."
   echo ""
   
-  # ✅ Roda servidor (blocking)
   runForever()
   
   echo "[SHUTDOWN] ✅ Servidor finalizado gracefully"

@@ -6,9 +6,10 @@
 # ✅ HTML VOLUMOSO (50KB) para IA
 # ✅ SEGURO - sem cache_manager (causa SIGSEGV)
 # ✅ COM CLOUDSCRAPER FALLBACK (HTTP → Cloudscraper chain)
-# ✅ Secrets via compile-time (seguro)
+# ✅ Secrets via runtime env (GC-safe)
 # ============================================================================
 
+import os
 import httpClient
 import json
 import strutils
@@ -31,19 +32,35 @@ type
     timestamp*: int64
 
 # ============================================================================
-# Configuration - Compile-time secrets
+# Configuration - Runtime secrets (GC-safe com threadvar)
 # ============================================================================
 
-const SERPER_API_KEY = staticExec("echo $SERPER_API_KEY")
-const SERPER_API_URL = "https://google.serper.dev/search"
-const MAX_HTML_SIZE = 50000
+var gSerperApiKey {.threadvar.}: string
+var gSerperApiUrl {.threadvar.}: string
+var gMaxHtmlSize {.threadvar.}: int
 
 proc initializeSecrets*() =
-  echo "[INIT] ✓ Secrets carregados via compile-time"
-  when defined(release):
-    if SERPER_API_KEY.len < 10:
-      echo "[ERROR] SERPER_API_KEY vazio ou inválido!"
-      quit(1)
+  echo "[INIT] ✓ Carregando secrets do ambiente..."
+  
+  gSerperApiKey = getEnv("SERPER_API_KEY", "")
+  gSerperApiUrl = "https://google.serper.dev/search"
+  gMaxHtmlSize = 50000
+  
+  if gSerperApiKey.len == 0:
+    echo "[ERROR] SERPER_API_KEY não encontrada!"
+    echo "[ERROR] Configure: flyctl secrets set SERPER_API_KEY=your_key -a croacia-mvp"
+    quit(1)
+  
+  if gSerperApiKey.len < 10:
+    echo "[ERROR] SERPER_API_KEY inválida (muito curta)!"
+    quit(1)
+  
+  echo "[INIT] ✓ API Key válida (", gSerperApiKey.len, " caracteres)"
+
+# Getters GC-safe
+proc SERPER_API_KEY(): string {.inline.} = gSerperApiKey
+proc SERPER_API_URL(): string {.inline.} = gSerperApiUrl
+proc MAX_HTML_SIZE(): int {.inline.} = gMaxHtmlSize
 
 # ============================================================================
 # Scraping Functions
@@ -60,13 +77,13 @@ proc fetchUrlsFromSerper*(query: string): Future[seq[string]] {.async, gcsafe.} 
     client.timeout = 15000
     
     client.headers = newHttpHeaders({
-      "x-api-key": SERPER_API_KEY,
+      "x-api-key": SERPER_API_KEY(),
       "Content-Type": "application/json",
       "User-Agent": "Croacia-MVP/1.0"
     })
     
     let payload = %*{"q": query, "num": 5}
-    response = client.postContent(SERPER_API_URL, $payload)
+    response = client.postContent(SERPER_API_URL(), $payload)
     
     let data = parseJson(response)
 
@@ -192,8 +209,9 @@ proc scrapePage*(url: string): Future[ScrapedResult] {.async, gcsafe.} =
       return scraped
 
     var cleanHtml = html
-    if cleanHtml.len > MAX_HTML_SIZE:
-      cleanHtml = cleanHtml[0..<MAX_HTML_SIZE]
+    let maxSize = MAX_HTML_SIZE()
+    if cleanHtml.len > maxSize:
+      cleanHtml = cleanHtml[0..<maxSize]
 
     scraped.html = cleanHtml
 

@@ -1,8 +1,8 @@
 # ============================================================================
-# CROACIA MVP - Multi-Stage Dockerfile with Compile-Time Secrets
+# CROACIA MVP - Multi-Stage Dockerfile
 # ============================================================================
-# Stage 1: Build with SERPER_API_KEY injected at compile-time
-# Stage 2: Minimal runtime with Python for Cloudscraper fallback
+# Stage 1: Build
+# Stage 2: Runtime with secrets from Fly.io
 # ============================================================================
 
 # ============================================================================
@@ -20,10 +20,6 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-# Accept build-time secret from Fly.io
-ARG SERPER_API_KEY
-ENV SERPER_API_KEY=${SERPER_API_KEY}
-
 # Copy Nim dependencies first for Docker layer caching
 COPY *.nimble ./
 RUN nimble install -y --depsOnly
@@ -34,8 +30,7 @@ COPY . .
 # Create build directory
 RUN mkdir -p /app/build
 
-# Compile binary with compile-time secrets embedded
-# The staticExec("echo $SERPER_API_KEY") in scraper.nim will read this
+# Compile binary (secrets são lidos em RUNTIME, não compile-time)
 RUN nim c \
     -d:release \
     --opt:speed \
